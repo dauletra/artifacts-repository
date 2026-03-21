@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Голос — Физика звука</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
+  --accent:#7c3aed;--accent2:#a855f7;--accent3:#06b6d4;
+  --text:#e2e8f0;--text2:#94a3b8;--border:#2d2d4e;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;font-size:16px}
+h2{font-size:1.4rem;font-weight:700}
+h3{font-size:1.15rem;font-weight:600}
+
+/* NAV */
+.nav{display:flex;align-items:center;gap:8px;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.nav-title{font-size:1.3rem;font-weight:700;color:var(--accent2);margin-right:auto}
+.nav-btn{padding:10px 22px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:1rem;transition:.2s}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-btn:hover:not(.active){background:var(--card2);color:var(--text)}
+
+/* SCREENS */
+.screen{display:none;padding:20px;max-width:1000px;margin:0 auto}
+.screen.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:18px}
+
+/* BUTTONS */
+.btn{padding:12px 26px;border-radius:10px;border:none;cursor:pointer;font-size:1.05rem;font-weight:700;transition:.2s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.85}
+.btn-green{background:var(--green);color:#fff}
+.btn-sm{padding:8px 16px;font-size:.9rem;border-radius:8px;font-weight:600;border:none;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* RING TIMER */
+.timer-wrap{display:flex;flex-direction:column;align-items:center;margin:14px 0}
+.ring-container{position:relative;width:120px;height:120px}
+.ring-svg{position:absolute;top:0;left:0;width:120px;height:120px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--border);stroke-width:7}
+.ring-fg{fill:none;stroke:var(--accent2);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .3s}
+.ring-canvas{position:absolute;top:7px;left:7px;width:106px;height:106px;border-radius:50%;background:#0a0a14}
+.ring-timer-text{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);font-size:2rem;font-weight:700;color:var(--accent2);white-space:nowrap}
+.timer-buttons{display:flex;justify-content:center;gap:12px;margin-top:48px}
+
+/* RESULT */
+.result-box{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:14px 0}
+.result-item{text-align:center;background:var(--card2);border-radius:12px;padding:12px 18px;min-width:120px}
+.ri-label{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.ri-val{font-size:1.9rem;font-weight:700;color:var(--accent2)}
+.ri-sub{font-size:.8rem;color:var(--text2);margin-top:3px}
+
+/* BADGES */
+.badge{display:inline-block;padding:5px 14px;border-radius:20px;font-size:.9rem;font-weight:700}
+.b-bass{background:#1e3a5f;color:#60a5fa}.b-baritone{background:#2d1b69;color:#a78bfa}
+.b-tenor{background:#4a1942;color:#f0abfc}.b-alto{background:#4c1d3f;color:#f9a8d4}
+.b-soprano{background:#4c1a1a;color:#fca5a5}
+
+/* CHARTS */
+.chart-wrap{margin-top:12px}
+.chart-title{font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:6px}
+.chart-title span{font-size:.8rem;font-weight:400}
+canvas{width:100%;border-radius:10px;background:#0a0a14;display:block}
+
+/* PHYS NOTE */
+.phys-note{background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:10px;padding:12px 16px;margin-top:12px;font-size:.95rem;line-height:1.7}
+.phys-note strong{color:var(--accent3)}
+
+/* LIVE SCOPE */
+.scope-wrap{position:relative}
+.live-badge{position:absolute;top:8px;right:10px;background:var(--red);color:#fff;font-size:.75rem;font-weight:700;padding:3px 8px;border-radius:6px;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* VOLUME */
+.vol-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.vol-label{font-size:.85rem;color:var(--text2);min-width:80px}
+.vol-bar-bg{flex:1;height:16px;background:var(--card2);border-radius:8px;overflow:hidden}
+.vol-bar-fg{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .08s}
+.vol-val{font-size:.85rem;font-weight:700;min-width:40px;text-align:right}
+
+/* HISTORY */
+.history-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card2);border-radius:8px;margin-bottom:8px;flex-wrap:wrap}
+.hi-hz{font-size:1.1rem;font-weight:700;color:var(--accent2);min-width:75px}
+.hi-note{color:var(--accent3);font-size:.85rem;min-width:90px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.95rem}
+.dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+
+/* GAME */
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
+.player-card{background:var(--card2);border:2px solid var(--border);border-radius:10px;padding:12px 14px;transition:.2s}
+.player-card.eliminated{opacity:.3;border-color:#3f1a1a;background:#150808}
+.player-card.speaker{border-color:var(--accent2);background:rgba(168,85,247,.1)}
+.player-card.elim-now{border-color:var(--red);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.pc-name{font-weight:700;font-size:1rem}
+.pc-sub{font-size:.78rem;margin-top:4px}
+.pc-sub.alive{color:var(--green)}.pc-sub.elim{color:var(--red)}.pc-sub.speaking{color:var(--accent2)}
+
+.guess-table{width:100%;border-collapse:collapse;margin-top:10px}
+.guess-table th,.guess-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
+.guess-table th{color:var(--text2);font-size:.85rem;text-transform:uppercase}
+.guess-table tr:last-child td{border-bottom:none}
+.guess-table input[type=number]{width:110px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:1rem}
+.row-elim td{background:rgba(239,68,68,.07)}
+.row-best td{background:rgba(16,185,129,.07)}
+.row-draw td{background:rgba(245,158,11,.07)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+
+input[type=text],select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:1rem}
+
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mt{margin-top:12px}.mb{margin-bottom:12px}
+.center{text-align:center}.text2{color:var(--text2);font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="nav-title">🎤 Голос — физика звука</span>
+  <button class="nav-btn active" data-screen="training" onclick="goto(this)">🏋️ Тренировка</button>
+  <button class="nav-btn" data-screen="game" onclick="goto(this)">🎮 Игра</button>
+</div>
+
+<!-- ══════════ TRAINING ══════════ -->
+<div id="screen-training" class="screen active">
+  <div class="card">
+    <h2>🔴 Живой осциллограф</h2>
+    <p class="text2 mt" style="margin-bottom:10px">Говори — сразу видишь форму волны своего голоса</p>
+    <div class="scope-wrap">
+      <canvas id="live-canvas" height="160"></canvas>
+      <div class="live-badge" id="live-badge" style="display:none">LIVE</div>
+    </div>
+    <div class="vol-row">
+      <div class="vol-label">Громкость</div>
+      <div class="vol-bar-bg"><div class="vol-bar-fg" id="vol-bar" style="width:0%"></div></div>
+      <div class="vol-val" id="vol-val">0%</div>
+    </div>
+    <div class="timer-buttons">
+      <button class="btn btn-primary" id="live-on-btn" onclick="liveStart()">▶ Включить</button>
+      <button class="btn btn-danger" id="live-off-btn" style="display:none" onclick="liveStop()">⏹ Выключить</button>
+    </div>
+    <div class="phys-note mt">
+      <strong>Что видишь?</strong> Ось X — время, Y — давление воздуха. Каждый повтор = <strong>период T</strong>. Чем выше нота — тем чаще волны. Форма — это <strong>тембр</strong>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔬 Анализ голоса</h2>
+    <p class="text2 mt">5 секунд записи → тон, громкость, тембр</p>
+    <div class="timer-wrap">
+      <div class="ring-container">
+        <canvas class="ring-canvas" id="tr-scope" width="106" height="106"></canvas>
+        <svg class="ring-svg" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="53"/>
+          <circle class="ring-fg" id="tr-ring" cx="60" cy="60" r="53" stroke-dasharray="333" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-timer-text" id="tr-timer">5</div>
+      </div>
+    </div>
+    <div class="timer-buttons">
+      <button class="btn btn-primary" id="tr-start-btn" onclick="trStart()">▶ Начать запись</button>
+      <button class="btn btn-danger" id="tr-stop-btn" style="display:none" onclick="trStop()">⏹ Стоп</button>
+    </div>
+    <div id="tr-status" class="text2 center mt"></div>
+  </div>
+
+  <div class="card" id="tr-result-card" style="display:none">
+    <h3>Результат</h3>
+    <div class="result-box" id="tr-result-box"></div>
+    <div class="chart-wrap">
+      <div class="chart-title">Форма волны <span>— тон и тембр</span></div>
+      <canvas id="tr-wave" height="170"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">Спектр FFT <span>— обертоны = тембр голоса</span></div>
+      <canvas id="tr-fft" height="170"></canvas>
+    </div>
+    <div class="phys-note mt" id="tr-phys"></div>
+  </div>
+
+  <div class="card" id="tr-history-card" style="display:none">
+    <h3>Сравнение голосов сессии</h3>
+    <canvas id="tr-hist-wave" height="180" class="mt"></canvas>
+    <div class="legend mt" id="tr-hist-legend"></div>
+    <div id="tr-hist-list" class="mt"></div>
+  </div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div id="screen-game" class="screen">
+
+  <!-- SETUP -->
+  <div id="g-setup">
+    <div class="card">
+      <h2>🎮 Игра — выживание</h2>
+      <p class="text2 mt mb">Каждый раунд один ученик говорит, все угадывают частоту. Чьи ответы дальше всего — выбывают.</p>
+      <h3>Ученики</h3>
+      <div id="g-player-inputs" class="mt"></div>
+      <div class="row mt">
+        <button class="btn btn-sm btn-primary" onclick="gAddInput()">+ Добавить</button>
+      </div>
+      <h3 class="mt">Выбывает за раунд</h3>
+      <div class="row mt">
+        <label class="text2">Количество:</label>
+        <select id="g-elim-count" style="width:80px"><option value="1">1</option><option value="2">2</option></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="g-start-btn" onclick="gStartGame()">▶ Начать игру</button>
+  </div>
+
+  <!-- ROUND -->
+  <div id="g-round" style="display:none">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Раунд <span id="g-round-num">1</span></h2>
+        <div class="row" style="gap:8px">
+          <span class="text2" id="g-alive-label"></span>
+          <button class="btn btn-sm btn-danger" onclick="gAbort()">Завершить</button>
+        </div>
+      </div>
+      <div class="player-grid mt" id="g-grid"></div>
+    </div>
+
+    <div class="card" id="g-rec-card">
+      <h3>🎤 Говорит: <span id="g-speaker-name" style="color:var(--accent2)"></span></h3>
+      <p class="text2 mt">Все слушают, потом вводят частоту</p>
+      <div class="timer-wrap">
+        <div class="ring-container">
+          <canvas class="ring-canvas" id="g-scope" width="106" height="106"></canvas>
+          <svg class="ring-svg" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="53"/>
+            <circle class="ring-fg" id="g-ring" cx="60" cy="60" r="53" stroke-dasharray="333" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring-timer-text" id="g-timer">5</div>
+        </div>
+      </div>
+      <div class="timer-buttons">
+        <button class="btn btn-primary" id="g-rec-btn" onclick="gStartRec()">▶ Запись</button>
+        <button class="btn btn-danger" id="g-stop-btn" style="display:none" onclick="gStopRec()">⏹ Стоп</button>
+      </div>
+      <div id="g-rec-status" class="text2 center mt"></div>
+    </div>
+
+    <div class="card" id="g-guess-card" style="display:none">
+      <h3>Все угадывают частоту (Гц)</h3>
+      <table class="guess-table mt">
+        <thead><tr><th>Ученик</th><th>Частота (Гц)</th></tr></thead>
+        <tbody id="g-guess-tbody"></tbody>
+      </table>
+      <button class="btn btn-primary mt" onclick="gReveal()">🔍 Показать ответ</button>
+    </div>
+
+    <div class="card" id="g-reveal-card" style="display:none">
+      <h3>Правильный ответ</h3>
+      <div class="result-box" id="g-result-box"></div>
+      <div class="two-col mt">
+        <div class="chart-wrap"><div class="chart-title">Форма волны</div><canvas id="g-wave" height="150"></canvas></div>
+        <div class="chart-wrap"><div class="chart-title">Спектр FFT</div><canvas id="g-fft" height="150"></canvas></div>
+      </div>
+      <div class="phys-note mt" id="g-phys"></div>
+      <h3 class="mt">Результаты раунда</h3>
+      <table class="guess-table mt">
+        <thead><tr><th>Ученик</th><th>Ответ</th><th>Ошибка (Гц)</th><th>Итог</th></tr></thead>
+        <tbody id="g-reveal-tbody"></tbody>
+      </table>
+      <div id="g-next-wrap" class="mt"></div>
+    </div>
+  </div>
+
+  <!-- WINNER -->
+  <div id="g-winner" style="display:none">
+    <div class="card" style="text-align:center;padding:48px 20px">
+      <div style="font-size:5rem">🏆</div>
+      <h2 class="mt" style="font-size:2.2rem;color:var(--accent2)" id="g-winner-name"></h2>
+      <p class="text2 mt">Победитель игры!</p>
+      <button class="btn btn-primary mt" onclick="gBackSetup()">🔄 Новая игра</button>
+    </div>
+  </div>
+
+</div><!-- /screen-game -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════
+//  CONSTANTS & SHARED STATE
+// ═══════════════════════════════════
+const SAMPLE_RATE = 44100;
+const CHUNK_SIZE  = 4096;
+const REC_DUR     = 5;      // seconds
+const FFT_SIZE    = 4096;
+const FFT_MAX_HZ  = 2500;
+const RING_CIRCUM = 333;    // 2π × 53
+
+const TR_COLORS = ['#7c3aed','#06b6d4','#f59e0b','#10b981','#ef4444','#f472b6','#34d399','#fb923c'];
+
+const VOICE_TYPES = [
+  {name:'Бас',     min:60,  max:150, cls:'b-bass',     color:'#60a5fa', desc:'Очень низкая частота f₀ = 60–150 Гц. Длинные медленно колеблющиеся связки. T ≈ 7–17 мс.'},
+  {name:'Баритон', min:100, max:220, cls:'b-baritone',  color:'#a78bfa', desc:'Средне-низкий диапазон f₀ = 100–220 Гц. Наиболее распространённый тип. T ≈ 5–10 мс.'},
+  {name:'Тенор',   min:130, max:280, cls:'b-tenor',     color:'#f0abfc', desc:'Светлый средний диапазон f₀ = 130–280 Гц. T ≈ 4–8 мс.'},
+  {name:'Альт',    min:170, max:350, cls:'b-alto',      color:'#f9a8d4', desc:'Тёплый диапазон f₀ = 170–350 Гц. Длинные резонирующие связки.'},
+  {name:'Сопрано', min:220, max:520, cls:'b-soprano',   color:'#fca5a5', desc:'Высокая частота f₀ = 220–520 Гц. Короткие быстрые связки. T ≈ 2–5 мс.'},
+];
+
+const RU_NOTES = ['До','До#','Ре','Ре#','Ми','Фа','Фа#','Соль','Соль#','Ля','Ля#','Си'];
+const RU_OCT   = {0:'субконтроктава',1:'контроктава',2:'большая октава',3:'малая октава',
+                  4:'первая октава',5:'вторая октава',6:'третья октава',7:'четвёртая октава'};
+
+// ═══════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════
+function goto(btn) {
+  const id = btn.dataset.screen;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════
+//  DSP UTILITIES
+// ═══════════════════════════════════
+function median(arr) {
+  const s = Float32Array.from(arr).sort();
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+}
+
+function rmsOf(frames) {
+  let sum = 0, n = 0;
+  for (const f of frames) { for (let i = 0; i < f.length; i++) { sum += f[i]*f[i]; n++; } }
+  return n ? Math.sqrt(sum / n) : 0;
+}
+
+// YIN pitch detection
+function yin(buf, sr) {
+  const W = Math.min(buf.length >> 1, 2048);
+  const d = new Float32Array(W);
+  d[0] = 1;
+  let rs = 0;
+  for (let t = 1; t < W; t++) {
+    let s = 0;
+    for (let i = 0; i < W; i++) { const v = buf[i] - buf[i+t]; s += v*v; }
+    d[t] = s; rs += d[t]; d[t] *= t / rs;
+  }
+  for (let t = 2; t < W; t++) {
+    if (d[t] < 0.15) {
+      while (t+1 < W && d[t+1] < d[t]) t++;
+      const a = d[t-1], b = d[t], c = t+1 < W ? d[t+1] : b;
+      return sr / (t + (a-c) / (2*(2*b-a-c)));
+    }
+  }
+  return 0;
+}
+
+// Radix-2 Cooley–Tukey FFT (in-place)
+function fftInPlace(re, im) {
+  const N = re.length;
+  for (let i = 1, j = 0; i < N; i++) {
+    let bit = N >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i],re[j]] = [re[j],re[i]]; [im[i],im[j]] = [im[j],im[i]]; }
+  }
+  for (let len = 2; len <= N; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < N; i += len) {
+      let cr = 1, ci = 0;
+      for (let j = 0; j < len/2; j++) {
+        const ur = re[i+j], ui = im[i+j];
+        const vr = re[i+j+len/2]*cr - im[i+j+len/2]*ci;
+        const vi = re[i+j+len/2]*ci + im[i+j+len/2]*cr;
+        re[i+j] = ur+vr; im[i+j] = ui+vi;
+        re[i+j+len/2] = ur-vr; im[i+j+len/2] = ui-vi;
+        const nr = cr*wr - ci*wi; ci = cr*wi + ci*wr; cr = nr;
+      }
+    }
+  }
+}
+
+// Compute magnitude spectrum from concatenated frames
+// Uses the most stable (highest RMS) window instead of just the start
+function computeSpectrum(frames, sr) {
+  const N = FFT_SIZE;
+  // find the N-sample window with highest RMS
+  let total = 0; frames.forEach(f => total += f.length);
+  const all = new Float32Array(total);
+  let off = 0; frames.forEach(f => { all.set(f, off); off += f.length; });
+
+  let bestStart = 0, bestRms = 0;
+  const step = Math.max(1, Math.floor(N / 4));
+  for (let s = 0; s + N < all.length; s += step) {
+    let rms = 0;
+    for (let i = 0; i < N; i++) rms += all[s+i] * all[s+i];
+    if (rms > bestRms) { bestRms = rms; bestStart = s; }
+  }
+
+  const re = new Float32Array(N), im = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const w = 0.5 * (1 - Math.cos(2 * Math.PI * i / (N-1))); // Hann
+    re[i] = all[bestStart + i] * w;
+  }
+  fftInPlace(re, im);
+
+  const maxBin = Math.floor(FFT_MAX_HZ * N / sr);
+  const mag = new Float32Array(maxBin);
+  for (let i = 0; i < maxBin; i++) mag[i] = Math.sqrt(re[i]*re[i] + im[i]*im[i]);
+  return { mag, binHz: sr / N };
+}
+
+// Extract the most stable waveform segment (N periods)
+function extractWave(frames, hz, sr, periods = 4) {
+  if (!hz || hz < 20) return null;
+  let total = 0; frames.forEach(f => total += f.length);
+  const all = new Float32Array(total);
+  let off = 0; frames.forEach(f => { all.set(f, off); off += f.length; });
+
+  const period = Math.round(sr / hz);
+  const need   = period * periods;
+  if (all.length < need + 2 * period) return null;
+
+  let bestStart = period, bestVar = Infinity;
+  const step = Math.max(1, Math.floor(period / 2));
+
+  for (let s = period; s + need + period < all.length; s += step) {
+    const rms = [];
+    for (let k = 0; k < periods; k++) {
+      let r = 0;
+      for (let i = 0; i < period; i++) { const v = all[s + k*period + i]; r += v*v; }
+      rms.push(Math.sqrt(r / period));
+    }
+    if (rms[0] < 0.002) continue; // skip silence
+    const avg = rms.reduce((a,b) => a+b, 0) / rms.length;
+    const variance = rms.reduce((a,b) => a + (b-avg)**2, 0) / rms.length;
+    if (variance < bestVar) { bestVar = variance; bestStart = s; }
+  }
+
+  const sl = all.slice(bestStart, bestStart + need);
+  sl._periods = periods;
+  return sl;
+}
+
+// ═══════════════════════════════════
+//  MUSIC UTILITIES
+// ═══════════════════════════════════
+function hz2note(hz) {
+  if (!hz || hz < 20) return '—';
+  const midi = Math.round(12 * Math.log2(hz / 440) + 69);
+  const oct  = Math.floor(midi / 12) - 1;
+  return RU_NOTES[((midi % 12) + 12) % 12] + ', ' + (RU_OCT[oct] || 'окт.' + oct);
+}
+
+function classifyVoice(hz) {
+  if (!hz || hz < 50) return null;
+  let best = null, bd = Infinity;
+  for (const v of VOICE_TYPES) {
+    if (hz >= v.min && hz <= v.max) return v;
+    const d = Math.min(Math.abs(hz - v.min), Math.abs(hz - v.max));
+    if (d < bd) { bd = d; best = v; }
+  }
+  return best;
+}
+
+function resultBoxHTML(hz, vt) {
+  const T   = hz > 0 ? (1000/hz).toFixed(1) : '—';
+  const lam = hz > 0 ? (343/hz).toFixed(2)  : '—';
+  return `
+    <div class="result-item"><div class="ri-label">Частота</div><div class="ri-val">${hz>0?hz.toFixed(1):'—'}</div><div class="ri-sub">Гц</div></div>
+    <div class="result-item"><div class="ri-label">Нота</div><div class="ri-val" style="font-size:1.2rem;color:var(--accent3)">${hz2note(hz)}</div></div>
+    <div class="result-item"><div class="ri-label">Тип голоса</div><div class="ri-val" style="font-size:1.1rem">${vt?`<span class="badge ${vt.cls}">${vt.name}</span>`:'—'}</div></div>
+    <div class="result-item"><div class="ri-label">Период T</div><div class="ri-val">${T}</div><div class="ri-sub">мс = 1/f</div></div>
+    <div class="result-item"><div class="ri-label">Длина волны λ</div><div class="ri-val">${lam}</div><div class="ri-sub">м (v=343)</div></div>`;
+}
+
+// ═══════════════════════════════════
+//  RING OSCILLOSCOPE
+// ═══════════════════════════════════
+let _ringThrottle = {};
+function drawRingScope(id, buf) {
+  const now = performance.now();
+  if (_ringThrottle[id] && now - _ringThrottle[id] < 40) return; // ~25fps max
+  _ringThrottle[id] = now;
+
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const S = cv.width, ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, S, S);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(S/2, S/2, S/2, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = '#1e1e3a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, S/2); ctx.lineTo(S, S/2); ctx.stroke();
+  if (buf && buf.length) {
+    let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i]*buf[i];
+    rms = Math.sqrt(rms / buf.length);
+    ctx.beginPath();
+    ctx.strokeStyle = `hsl(${270 + rms*600}, 90%, ${60 + rms*200}%)`;
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < S; i++) {
+      const v = buf[Math.floor(i * buf.length / S)] || 0;
+      const y = S/2 - v * (S/2 - 4);
+      i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function clearRingScope(id) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cv.width/2, cv.height/2, cv.width/2, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.restore();
+}
+
+function setRing(id, frac) {
+  const el = document.getElementById(id);
+  if (el) el.style.strokeDashoffset = RING_CIRCUM * (1 - frac);
+}
+
+// ═══════════════════════════════════
+//  RECORDER
+// ═══════════════════════════════════
+function createRecorder({ duration = REC_DUR, onTick, onFrame, onDone }) {
+  let actx, src, proc, stream, timer, elapsed = 0;
+  const pitches = [], frames = [];
+
+  async function start() {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+    const sr = actx.sampleRate;
+    src  = actx.createMediaStreamSource(stream);
+    proc = actx.createScriptProcessor(CHUNK_SIZE, 1, 1);
+    src.connect(proc); proc.connect(actx.destination);
+
+    proc.onaudioprocess = e => {
+      const buf = new Float32Array(e.inputBuffer.getChannelData(0));
+      frames.push(buf);
+      const p = yin(buf, sr);
+      if (p > 40 && p < 1500) pitches.push(p);
+      if (onFrame) onFrame(buf);
+    };
+
+    timer = setInterval(() => {
+      elapsed++;
+      if (onTick) onTick(duration - elapsed, elapsed / duration);
+      if (elapsed >= duration) stop();
+    }, 1000);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    [proc, src].forEach(n => { if (n) { n.disconnect(); } });
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (actx)   actx.close();
+    const sr  = actx?.sampleRate || SAMPLE_RATE;
+    const hz  = pitches.length ? median(pitches) : 0;
+    const wave     = extractWave(frames, hz, sr);
+    const spectrum = computeSpectrum(frames, sr);
+    const rms      = rmsOf(frames);
+    if (onDone) onDone({ hz, pitches, wave, spectrum, rms });
+  }
+
+  return { start, stop };
+}
+
+// ═══════════════════════════════════
+//  CHART: WAVEFORM
+// ═══════════════════════════════════
+function drawWave(id, waves) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const W = cv.width = cv.offsetWidth || 600, H = cv.height;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, W, H);
+
+  const P = { l:44, r:12, t:16, b:32 };
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+
+  // zero line
+  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(P.l, P.t+ph/2); ctx.lineTo(P.l+pw, P.t+ph/2); ctx.stroke();
+
+  // axis labels
+  ctx.fillStyle = '#475569'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('+A', P.l-4, P.t+12);
+  ctx.fillText('0',  P.l-4, P.t+ph/2+4);
+  ctx.fillText('−A', P.l-4, P.t+ph-4);
+  ctx.textAlign = 'center'; ctx.font = '11px sans-serif';
+  ctx.fillText('Время (мс)', P.l+pw/2, H-4);
+
+  let gmax = 0;
+  waves.forEach(({wave}) => { if (wave) wave.forEach(v => { if (Math.abs(v) > gmax) gmax = Math.abs(v); }); });
+  if (gmax < 0.0001) gmax = 0.0001;
+
+  waves.forEach(({wave, color, hz, label}) => {
+    if (!wave || !wave.length) return;
+    ctx.beginPath(); ctx.strokeStyle = color;
+    ctx.lineWidth = waves.length === 1 ? 2.5 : 1.8;
+    ctx.globalAlpha = 0.9;
+    for (let i = 0; i < wave.length; i++) {
+      const x = P.l + pw * i / (wave.length - 1 || 1);
+      const y = P.t + ph/2 - (wave[i] / gmax) * (ph/2 - 4);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+
+    // period markers (single wave only)
+    if (waves.length === 1 && hz > 0 && wave._periods) {
+      const pp = pw / wave._periods;
+      ctx.strokeStyle = 'rgba(6,182,212,.4)'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      for (let p = 0; p <= wave._periods; p++) {
+        const x = P.l + p*pp;
+        ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t+ph); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#06b6d4'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('T=' + (1000/hz).toFixed(1) + 'мс', P.l + pp/2, P.t + 10);
+    }
+
+    // multi-wave label
+    if (waves.length > 1 && label) {
+      ctx.fillStyle = color; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(label + (hz ? ' ' + hz.toFixed(0) + 'Гц' : ''), P.l+6, P.t+14+waves.indexOf(arguments[0]||{})*15);
+    }
+  });
+}
+
+// ═══════════════════════════════════
+//  CHART: FFT SPECTRUM
+// ═══════════════════════════════════
+function drawFFT(id, spectra) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const W = cv.width = cv.offsetWidth || 600, H = cv.height;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, W, H);
+
+  const P = { l:44, r:12, t:16, b:36 };
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+
+  // grid & x-labels
+  ctx.strokeStyle = '#1a1a30'; ctx.lineWidth = 1;
+  [500, 1000, 1500, 2000, 2500].forEach(f => {
+    const x = P.l + pw * f / FFT_MAX_HZ;
+    ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t+ph); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(f + 'Гц', x, H-6);
+  });
+  ctx.textAlign = 'right'; ctx.fillText('A', P.l-4, P.t+12);
+  ctx.textAlign = 'center'; ctx.font = '11px sans-serif';
+  ctx.fillText('Частота (Гц)', P.l+pw/2, H-1);
+
+  let gmax = 0;
+  spectra.forEach(({mag}) => { if (mag) mag.forEach(v => { if (v > gmax) gmax = v; }); });
+  if (gmax < 0.001) gmax = 0.001;
+
+  spectra.forEach(({mag, binHz, color, hz}, si) => {
+    if (!mag) return;
+    const maxBin = Math.floor(FFT_MAX_HZ / binHz);
+
+    // fill
+    ctx.beginPath(); ctx.moveTo(P.l, P.t+ph);
+    for (let i = 1; i < maxBin && i < mag.length; i++) {
+      ctx.lineTo(P.l + pw*(i*binHz)/FFT_MAX_HZ, P.t+ph - (mag[i]/gmax)*ph*0.92);
+    }
+    ctx.lineTo(P.l + pw*(maxBin*binHz)/FFT_MAX_HZ, P.t+ph);
+    ctx.closePath(); ctx.globalAlpha = 0.2; ctx.fillStyle = color; ctx.fill(); ctx.globalAlpha = 1;
+
+    // line
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+    let first = true;
+    for (let i = 1; i < maxBin && i < mag.length; i++) {
+      const x = P.l + pw*(i*binHz)/FFT_MAX_HZ;
+      const y = P.t+ph - (mag[i]/gmax)*ph*0.92;
+      first ? ctx.moveTo(x, y) : ctx.lineTo(x, y); first = false;
+    }
+    ctx.stroke();
+
+    // f0 marker + harmonic labels
+    if (hz > 0) {
+      const x0 = P.l + pw*hz/FFT_MAX_HZ;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(x0, P.t); ctx.lineTo(x0, P.t+ph); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('f₀', x0, P.t + 10 + si*14);
+      if (si === 0) {
+        ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(148,163,184,.5)';
+        for (let h = 2; h*hz < FFT_MAX_HZ; h++) {
+          const x = P.l + pw*(h*hz)/FFT_MAX_HZ;
+          if (x > W - P.r) break;
+          ctx.fillText(h + 'f', x, P.t+ph-4);
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+//  LIVE OSCILLOSCOPE
+// ═══════════════════════════════════
+const live = { actx:null, src:null, proc:null, stream:null, raf:null, buf:new Float32Array(2048) };
+
+function liveStart() {
+  document.getElementById('live-on-btn').style.display  = 'none';
+  document.getElementById('live-off-btn').style.display = '';
+  document.getElementById('live-badge').style.display   = '';
+
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(stream => {
+    live.stream = stream;
+    live.actx   = new (window.AudioContext || window.webkitAudioContext)();
+    live.src    = live.actx.createMediaStreamSource(stream);
+    live.proc   = live.actx.createScriptProcessor(2048, 1, 1);
+    live.src.connect(live.proc); live.proc.connect(live.actx.destination);
+    live.proc.onaudioprocess = e => { live.buf = new Float32Array(e.inputBuffer.getChannelData(0)); };
+    liveDrawLoop();
+  }).catch(e => { alert('Нет доступа к микрофону: ' + e.message); liveStop(); });
+}
+
+function liveStop() {
+  if (live.raf) { cancelAnimationFrame(live.raf); live.raf = null; }
+  if (live.proc)   { live.proc.disconnect(); live.proc = null; }
+  if (live.src)    { live.src.disconnect();  live.src  = null; }
+  if (live.stream) live.stream.getTracks().forEach(t => t.stop());
+  if (live.actx)   { live.actx.close(); live.actx = null; }
+  document.getElementById('live-on-btn').style.display  = '';
+  document.getElementById('live-off-btn').style.display = 'none';
+  document.getElementById('live-badge').style.display   = 'none';
+  document.getElementById('vol-bar').style.width = '0%';
+  document.getElementById('vol-val').textContent = '0%';
+  const cv = document.getElementById('live-canvas');
+  if (cv) { const ctx = cv.getContext('2d'); ctx.fillStyle='#0a0a14'; ctx.fillRect(0,0,cv.width,cv.height); }
+}
+
+function liveDrawLoop() {
+  live.raf = requestAnimationFrame(liveDrawLoop);
+  const cv = document.getElementById('live-canvas');
+  if (!cv) return;
+  const W = cv.width = cv.offsetWidth || 600, H = cv.height;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = 'rgba(10,10,20,.75)'; ctx.fillRect(0,0,W,H);
+
+  // volume
+  let rms = 0; for (let i = 0; i < live.buf.length; i++) rms += live.buf[i]*live.buf[i];
+  rms = Math.sqrt(rms / live.buf.length);
+  const pct = Math.min(100, Math.round(rms * 400));
+  document.getElementById('vol-bar').style.width = pct + '%';
+  document.getElementById('vol-val').textContent  = pct + '%';
+
+  // zero line
+  ctx.strokeStyle = '#1e1e3a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+  // waveform
+  ctx.beginPath(); ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2;
+  for (let i = 0; i < live.buf.length; i++) {
+    const x = W * i / (live.buf.length - 1);
+    const y = H/2 - live.buf[i] * (H/2 - 6);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle = '#475569'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('+A', 2, 12); ctx.fillText('0', 2, H/2+4); ctx.fillText('−A', 2, H-4);
+  ctx.textAlign = 'center'; ctx.fillText('Время →', W/2, H-3);
+}
+
+// ═══════════════════════════════════
+//  TRAINING
+// ═══════════════════════════════════
+let trRec = null;
+const trHistory = []; // max 6 entries: {hz, note, vt, wave, spectrum, rms, color}
+
+function trStart() {
+  el('tr-start-btn').style.display = 'none';
+  el('tr-stop-btn').style.display  = '';
+  el('tr-status').textContent      = '🔴 Говори...';
+
+  trRec = createRecorder({
+    onTick : (rem, f) => { el('tr-timer').textContent = rem; setRing('tr-ring', f); },
+    onFrame: buf => drawRingScope('tr-scope', buf),
+    onDone : trDone,
+  });
+  trRec.start().catch(e => { el('tr-status').textContent = 'Нет доступа: ' + e.message; trReset(); });
+}
+
+function trStop()  { trRec && trRec.stop(); }
+
+function trReset() {
+  el('tr-start-btn').style.display = '';
+  el('tr-stop-btn').style.display  = 'none';
+  el('tr-timer').textContent = REC_DUR;
+  setRing('tr-ring', 0);
+  clearRingScope('tr-scope');
+}
+
+function trDone({ hz, pitches, wave, spectrum, rms }) {
+  trReset();
+  el('tr-status').textContent = '';
+  if (pitches.length < 5) { el('tr-status').textContent = 'Слишком короткая запись — говори дольше.'; return; }
+  if (!hz || hz < 40)     { el('tr-status').textContent = 'Голос не определён. Попробуй ещё раз.'; return; }
+
+  const vt = classifyVoice(hz);
+  el('tr-result-card').style.display = '';
+  el('tr-result-box').innerHTML = resultBoxHTML(hz, vt);
+
+  const volPct = Math.min(100, Math.round(rms * 400));
+  el('tr-phys').innerHTML =
+    `<strong>Тон:</strong> f₀ = ${hz.toFixed(1)} Гц, T = ${(1000/hz).toFixed(1)} мс, λ = ${(343/hz).toFixed(2)} м<br>
+     <strong>Громкость:</strong> RMS = ${(rms*100).toFixed(1)}% (${volPct > 60 ? 'громко' : 'тихо'})<br>
+     <strong>Тембр:</strong> пики на 2f, 3f… — обертоны. Их набор уникален для каждого голоса.<br>
+     ${vt ? '<strong>' + vt.name + ':</strong> ' + vt.desc : ''}`;
+
+  setTimeout(() => {
+    if (wave)     drawWave('tr-wave', [{ wave, color: vt?.color || '#a855f7', hz }]);
+    if (spectrum) drawFFT ('tr-fft',  [{ ...spectrum, color: vt?.color || '#a855f7', hz }]);
+  }, 50);
+
+  // prepend to history (keep max 6, free old Float32Arrays)
+  const color = TR_COLORS[trHistory.length % TR_COLORS.length];
+  if (trHistory.length >= 6) {
+    const old = trHistory.pop();
+    old.wave = null; old.spectrum = null; // help GC
+  }
+  trHistory.unshift({ hz, note: hz2note(hz), vt, wave, spectrum, rms, color });
+  renderTrHistory();
+}
+
+function renderTrHistory() {
+  const card = el('tr-history-card');
+  if (!trHistory.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  setTimeout(() => {
+    drawWave('tr-hist-wave', trHistory.filter(r => r.wave).map(r => ({
+      wave: r.wave, color: r.color, label: r.vt?.name || '—', hz: r.hz
+    })));
+  }, 50);
+
+  el('tr-hist-legend').innerHTML = trHistory.map(r => `
+    <div class="legend-item">
+      <div class="dot" style="background:${r.color}"></div>
+      <span>${r.vt?.name || '—'} — ${r.hz.toFixed(0)} Гц — ${r.note}</span>
+    </div>`).join('');
+
+  el('tr-hist-list').innerHTML = trHistory.map(r => `
+    <div class="history-item" style="border-left:3px solid ${r.color}">
+      <div class="dot" style="background:${r.color}"></div>
+      <div class="hi-hz">${r.hz.toFixed(0)} Гц</div>
+      <div class="hi-note">${r.note}</div>
+      <div>${r.vt ? `<span class="badge ${r.vt.cls}">${r.vt.name}</span>` : ''}</div>
+      <div class="text2" style="margin-left:auto">RMS ${Math.round(r.rms*400)}%</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+//  GAME — SURVIVAL
+// ═══════════════════════════════════
+const G = {
+  players    : [],  // { name, alive, elimRound }
+  round      : 0,
+  speakerIdx : 0,
+  elimCount  : 1,
+  curr       : null, // { hz, wave, spectrum, vt }
+  rec        : null,
+};
+
+// ── Setup ──
+function gAddInput() {
+  const wrap = el('g-player-inputs');
+  const n    = wrap.children.length + 1;
+  const div  = document.createElement('div');
+  div.className = 'row mb'; div.style.gap = '8px';
+  div.innerHTML = `
+    <input type="text" placeholder="Ученик ${n}" style="width:180px" class="g-pname">
+    <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(div);
+}
+
+function gInitInputs() {
+  el('g-player-inputs').innerHTML = '';
+  for (let i = 0; i < 4; i++) gAddInput();
+}
+gInitInputs();
+
+function gStartGame() {
+  const names = [...document.querySelectorAll('.g-pname')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (names.length < 2) { alert('Добавь хотя бы 2 ученика'); return; }
+
+  G.players    = names.map(name => ({ name, alive:true, elimRound:null }));
+  G.round      = 0;
+  G.speakerIdx = 0;
+  G.elimCount  = parseInt(el('g-elim-count').value) || 1;
+
+  show('g-setup', false); show('g-round', true); show('g-winner', false);
+  gNextRound();
+}
+
+// ── Round ──
+function gNextRound() {
+  const alive = G.players.filter(p => p.alive);
+  if (alive.length <= 1) { gShowWinner(); return; }
+
+  G.round++;
+  G.curr = null;
+
+  // advance speakerIdx to next alive player
+  G.speakerIdx = (G.speakerIdx + 1) % G.players.length;
+  let tries = 0;
+  while (!G.players[G.speakerIdx].alive) {
+    G.speakerIdx = (G.speakerIdx + 1) % G.players.length;
+    if (++tries > G.players.length) break;
+  }
+
+  el('g-round-num').textContent  = G.round;
+  el('g-alive-label').textContent = 'В игре: ' + alive.length;
+  el('g-speaker-name').textContent = G.players[G.speakerIdx].name;
+  el('g-timer').textContent = REC_DUR;
+  setRing('g-ring', 0);
+  clearRingScope('g-scope');
+  el('g-rec-btn').style.display  = '';
+  el('g-stop-btn').style.display = 'none';
+  el('g-rec-status').textContent = '';
+  show('g-guess-card',  false);
+  show('g-reveal-card', false);
+  gRenderGrid();
+}
+
+function gRenderGrid() {
+  el('g-grid').innerHTML = G.players.map((p, i) => {
+    let cls = 'player-card', sub = '', subCls = '';
+    if (!p.alive)         { cls += ' eliminated'; sub = `Выбыл (раунд ${p.elimRound})`; subCls = 'elim'; }
+    else if (i === G.speakerIdx) { cls += ' speaker';    sub = '🎤 Говорит'; subCls = 'speaking'; }
+    else                  { sub = 'В игре'; subCls = 'alive'; }
+    return `<div class="${cls}"><div class="pc-name">${p.name}</div><div class="pc-sub ${subCls}">${sub}</div></div>`;
+  }).join('');
+}
+
+// ── Record ──
+function gStartRec() {
+  el('g-rec-btn').style.display  = 'none';
+  el('g-stop-btn').style.display = '';
+  el('g-rec-status').textContent = '🔴 Говорит ' + G.players[G.speakerIdx].name + '...';
+
+  G.rec = createRecorder({
+    onTick : (r, f) => { el('g-timer').textContent = r; setRing('g-ring', f); },
+    onFrame: buf => drawRingScope('g-scope', buf),
+    onDone : gDone,
+  });
+  G.rec.start().catch(e => {
+    el('g-rec-status').textContent = 'Нет доступа: ' + e.message;
+    el('g-rec-btn').style.display  = '';
+    el('g-stop-btn').style.display = 'none';
+  });
+}
+
+function gStopRec() { G.rec && G.rec.stop(); }
+
+function gDone({ hz, pitches, wave, spectrum }) {
+  el('g-rec-btn').style.display  = '';
+  el('g-stop-btn').style.display = 'none';
+  el('g-rec-status').textContent = '';
+  el('g-timer').textContent = REC_DUR;
+  setRing('g-ring', 0); clearRingScope('g-scope');
+
+  if (!hz || hz < 40 || pitches.length < 5) {
+    el('g-rec-status').textContent = 'Голос не определён — попробуй ещё раз.';
+    el('g-rec-btn').style.display = ''; return;
+  }
+
+  G.curr = { hz, wave, spectrum, vt: classifyVoice(hz) };
+
+  // Build guess form for all alive players
+  el('g-guess-tbody').innerHTML = G.players.map((p, i) => {
+    if (!p.alive) return '';
+    const isSpeaker = (i === G.speakerIdx);
+    return `<tr>
+      <td style="font-weight:600">${isSpeaker ? '🎤 ' : ''}${p.name}</td>
+      <td><input type="number" id="g-hz-${i}" placeholder="Гц" min="40" max="800"></td>
+    </tr>`;
+  }).join('');
+
+  show('g-guess-card', true);
+}
+
+// ── Reveal ──
+function gReveal() {
+  if (!G.curr) return;
+  const { hz, wave, spectrum, vt } = G.curr;
+
+  show('g-guess-card',  false);
+  show('g-reveal-card', true);
+
+  el('g-result-box').innerHTML = resultBoxHTML(hz, vt);
+  el('g-phys').innerHTML = vt
+    ? `<strong>Физика:</strong> f₀ = ${hz.toFixed(1)} Гц, T = ${(1000/hz).toFixed(1)} мс. ${vt.desc}`
+    : '';
+
+  setTimeout(() => {
+    if (wave)     drawWave('g-wave', [{ wave, color: vt?.color || '#a855f7', hz }]);
+    if (spectrum) drawFFT ('g-fft',  [{ ...spectrum, color: vt?.color || '#a855f7', hz }]);
+  }, 50);
+
+  // beep
+  try {
+    const ac = new AudioContext(), o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.frequency.value = 660;
+    g.gain.setValueAtTime(.3, 0); g.gain.exponentialRampToValueAtTime(.001, .5);
+    o.start(); o.stop(.5);
+  } catch(e) {}
+
+  // Collect guesses from all alive players
+  const guesses = G.players.map((p, i) => {
+    if (!p.alive) return null;
+    const raw  = parseFloat(el('g-hz-' + i)?.value);
+    const val  = isNaN(raw) ? null : raw;
+    const diff = val === null ? Infinity : Math.abs(val - hz);
+    return { i, name: p.name, val, diff };
+  }).filter(Boolean);
+
+  // ── Elimination logic ──
+  // Sort worst first
+  const sorted = [...guesses].sort((a, b) => b.diff - a.diff);
+
+  // Check if all answers are identical
+  const allSame = guesses.every(g => g.diff === guesses[0].diff);
+
+  const elimSet = new Set();
+  if (!allSame) {
+    // never eliminate more than aliveCount-1 (keep at least 1 survivor)
+    const effectiveElim = Math.min(G.elimCount, guesses.length - 1);
+    // threshold = diff of the effectiveElim-th worst answer
+    const threshold = sorted[effectiveElim - 1].diff;
+    // include everyone tied at that threshold, but not if it would eliminate everyone
+    const candidates = guesses.filter(g => g.diff >= threshold);
+    if (candidates.length < guesses.length) {
+      candidates.forEach(g => elimSet.add(g.i));
+    }
+  }
+
+  // Apply elimination
+  elimSet.forEach(i => { G.players[i].alive = false; G.players[i].elimRound = G.round; });
+
+  // Best answer (ignoring Infinity)
+  const finite = guesses.filter(g => g.diff !== Infinity);
+  const minDiff = finite.length ? Math.min(...finite.map(g => g.diff)) : Infinity;
+
+  // Reveal table
+  el('g-reveal-tbody').innerHTML = guesses.map(g => {
+    const isElim = elimSet.has(g.i);
+    const isBest = !allSame && g.diff === minDiff && g.diff !== Infinity;
+    const cls    = isElim ? 'row-elim' : allSame ? 'row-draw' : isBest ? 'row-best' : '';
+    const diffStr = g.val === null
+      ? '<span style="color:var(--text2)">нет ответа</span>'
+      : `${g.val} Гц`;
+    const errStr  = g.diff === Infinity ? '—' : '±' + g.diff.toFixed(0) + ' Гц';
+    const icon    = isElim ? '💀' : allSame ? '🟡' : isBest ? '⭐' : '';
+    const verdict = isElim ? '<span style="color:var(--red);font-weight:700">Выбывает</span>'
+                  : allSame ? '<span style="color:var(--yellow);font-weight:700">Ничья</span>'
+                  : isBest  ? '<span style="color:var(--green);font-weight:700">Лучший</span>'
+                  : '—';
+    return `<tr class="${cls}">
+      <td style="font-weight:600">${icon} ${g.name}</td>
+      <td>${diffStr}</td><td>${errStr}</td><td>${verdict}</td>
+    </tr>`;
+  }).join('');
+
+  gRenderGrid();
+
+  // Next step
+  const alive = G.players.filter(p => p.alive);
+  const nextWrap = el('g-next-wrap');
+  if (alive.length <= 1) {
+    const winner = alive[0] || G.players.find(p => p.alive);
+    nextWrap.innerHTML = `
+      <div style="background:rgba(168,85,247,.15);border:2px solid var(--accent2);border-radius:12px;padding:20px 24px;text-align:center">
+        <div style="font-size:2.5rem">🏆</div>
+        <div style="font-size:1.6rem;font-weight:700;color:var(--accent2);margin-top:6px">Победитель: ${winner ? winner.name : '—'}</div>
+      </div>
+      <button class="btn btn-primary mt" onclick="gBackSetup()">🔄 Новая игра</button>`;
+  } else {
+    nextWrap.innerHTML = '<button class="btn btn-primary" onclick="gNextRound()">➡ Следующий раунд</button>';
+  }
+}
+
+function gShowWinner() {
+  show('g-round', false); show('g-winner', true);
+  const winner = G.players.find(p => p.alive);
+  el('g-winner-name').textContent = winner ? winner.name : '—';
+}
+
+function gAbort()    { show('g-round', false); show('g-setup', true); }
+function gBackSetup(){ show('g-winner', false); show('g-setup', true); gInitInputs(); }
+
+// ═══════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════
+function el(id)         { return document.getElementById(id); }
+function show(id, on)   { el(id).style.display = on ? '' : 'none'; }
+
+window.addEventListener('resize', () => {
+  if (trHistory.length) setTimeout(() =>
+    drawWave('tr-hist-wave', trHistory.filter(r => r.wave).map(r => ({ wave:r.wave, color:r.color, hz:r.hz }))), 50);
+  if (G.curr) setTimeout(() => {
+    if (G.curr.wave)     drawWave('g-wave', [{ wave:G.curr.wave, color:G.curr.vt?.color||'#a855f7', hz:G.curr.hz }]);
+    if (G.curr.spectrum) drawFFT ('g-fft',  [{ ...G.curr.spectrum, color:G.curr.vt?.color||'#a855f7', hz:G.curr.hz }]);
+  }, 50);
+});
+</script>
+</body>
+</html>
